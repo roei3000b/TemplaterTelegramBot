@@ -37,9 +37,9 @@ def get_times(city):
     return json_times
 
 
-def init_replacements():
+def init_replacements(city):
     global replacements
-    json_times = get_times(CITY)
+    json_times = get_times(city)
     # TODO: check next holiday
     next_shabbat = json_times["nextShabbat"]
     parsed_times = {k["name"]: k["value"] for k in next_shabbat["times"]}
@@ -122,8 +122,8 @@ def remove_element_from_xml(element):
     element.getparent().remove(element)
 
 
-def fill_template(template_file_name, target_directory):
-    init_replacements()
+def fill_template(template_file_name, target_directory, city):
+    init_replacements(city)
     with tempfile.TemporaryDirectory() as dir_name:
         shutil.copy(template_file_name, f"{dir_name}/input.zip")
         # shutil.copy(f"{dir_name}/input.zip", f"{target_directory}/output.docx", )
@@ -143,7 +143,6 @@ def fill_template(template_file_name, target_directory):
             for text_element in text_elements:
                 index = 0
                 replaced_text = ""
-                start_index = 0
                 while index < len(text_element.text):
                     if text_element.text[index:index+2] == '{{':
                         start_index = index
@@ -151,18 +150,24 @@ def fill_template(template_file_name, target_directory):
                         index += 2
                         replaced_text += text_element.text[start_index:index]
                     elif maybe_token and text_element.text[index:index+2] == '}}':
-                        end_index = index + 3
+                        end_index = index + 2
                         maybe_token = False
                         if not cross_line_token:
                             token = text_element.text[start_index:end_index]
                             replaced_text = replaced_text[:start_index] + parse_token(token)
                         else:
                             token = "".join([t.text for t in cross_line_token])
-                            token += text_element.text[start_index:end_index]
+                            token += text_element.text[:end_index]
+                            token = token[start_index:]
+
+                            cross_line_token[0].text = cross_line_token[0].text[start_index+2:]
+                            cross_line_token.pop(0)
+
                             for c in cross_line_token:
                                 c.text = ''
                             replaced_text = parse_token(token)
                             cross_line_token = []
+                            start_index = 0
                         index += 2
                     else:
                         replaced_text += text_element.text[index]
