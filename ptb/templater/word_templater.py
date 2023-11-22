@@ -1,5 +1,4 @@
 import json
-import os
 import shutil
 import tempfile
 import zipfile
@@ -9,8 +8,7 @@ import requests
 import re
 from lxml import etree
 
-CITY = "חריש"
-
+from . import exceptions
 
 replacements = {
 }
@@ -32,8 +30,8 @@ def get_times(city):
     times = times.replace("\\\\", "\\")
     times = times.replace("'", "\"")
     json_times = json.loads(times)
-    if json_times["place"]["name"] != CITY:
-        raise Exception("Wrong city")
+    if json_times["place"]["name"] != city:
+        raise exceptions.NoSuchCity("Wrong city")
     return json_times
 
 
@@ -160,7 +158,7 @@ def fill_template(template_file_name, target_directory, city):
                             token += text_element.text[:end_index]
                             token = token[start_index:]
 
-                            cross_line_token[0].text = cross_line_token[0].text[start_index+2:]
+                            cross_line_token[0].text = cross_line_token[0].text[:start_index]
                             cross_line_token.pop(0)
 
                             for c in cross_line_token:

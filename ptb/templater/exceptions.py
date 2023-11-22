@@ -1,0 +1,3 @@
+class NoSuchCity(Exception):
+    pass
+
