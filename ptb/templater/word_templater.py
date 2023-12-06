@@ -60,6 +60,7 @@ def get_replacement(token):
     global replacements
     return replacements.get(token, token)
 
+
 def parse_token(token):
     global replacements
     token = token.replace(" ", "")
@@ -75,6 +76,7 @@ def parse_token(token):
         return replacements[splited_token[0]]
 
     return calculate_token(splited_token[0])
+
 
 
 def calculate_token(token):
