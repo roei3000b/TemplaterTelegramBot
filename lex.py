@@ -1,7 +1,7 @@
 import os
 import ply.lex as lex
 import ply.yacc as yacc
-from . import utils
+from ptb.templater import utils
 
 class Parser:
     tokens = ()
@@ -35,14 +35,23 @@ class Parser:
 class WordTemplaterParser(Parser):
 
     tokens = (
-        'NAME', 'TIME', 'NUMBER',
+        'NAME', 'TIME', 'NUMBER', 'UP', 'DOWN',
     )
 
     literals = ['=', '+', '-', '*', '/', '(', ')']
 
     # Tokens
+    def t_UP(self, t):
+        r'UP'
+        return t
 
-    t_NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
+    def t_DOWN(self, t):
+        r'DOWN'
+        return t
+
+    def t_NAME(self, t):
+        r'[a-zA-Z_][a-zA-Z0-9_]*'
+        return t
 
     def t_TIME(self, t):
         r'([0-1][0-9]|2[0-3]):[0-5][0-9]'
@@ -101,7 +110,7 @@ class WordTemplaterParser(Parser):
             if utils.is_number(p[1]) and utils.is_number(p[3]):
                 p[0] = p[1] - p[3]
             else:
-                p[0] = utils.add_minutes_to_time(p[1], p[3])
+                p[0] = utils.add_minutes_to_time(p[1], -p[3])
         elif p[2] == '*':
             p[0] = p[1] * p[3]
         elif p[2] == '/':
@@ -113,6 +122,14 @@ class WordTemplaterParser(Parser):
         "expression : '-' expression %prec UMINUS"
         p[0] = -p[2]
 
+    def p_expression_down(self, p):
+        "expression : DOWN '(' expression ')'"
+        p[0] = utils.round_down_to_nearest_5_minutes(p[3])
+
+
+    def p_expression_up(self, p):
+        "expression : UP '(' expression ')'"
+        p[0] = utils.round_up_to_nearest_5_minutes(p[3])
 
     def p_expression_group(self, p):
         "expression : '(' expression ')'"

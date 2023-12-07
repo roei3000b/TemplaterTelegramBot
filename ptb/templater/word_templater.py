@@ -6,7 +6,7 @@ import zipfile
 import requests
 import re
 from lxml import etree
-from . import lex
+import lex
 
 from . import exceptions
 
