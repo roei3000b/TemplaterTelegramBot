@@ -1,7 +1,7 @@
 import os
 import ply.lex as lex
 import ply.yacc as yacc
-import utils
+from . import utils
 
 class Parser:
     tokens = ()
@@ -15,20 +15,25 @@ class Parser:
                           1] + "_" + self.__class__.__name__
         except:
             modname = "parser" + "_" + self.__class__.__name__
-        self.debugfile = modname + ".dbg"
+        # self.debugfile = modname + ".dbg"
         # print self.debugfile
 
         # Build the lexer and parser
         lex.lex(module=self, debug=self.debug)
         yacc.yacc(module=self,
                   debug=self.debug,
-                  debugfile=self.debugfile)
+                  )
 
     def parse(self, s, **kwargs):
-            yacc.parse(s, **kwargs)
+        b = yacc.parse(s, **kwargs)
+        return b
+
+    def set_names(self, names):
+        self.names = names
 
 
-class WordTemplater(Parser):
+class WordTemplaterParser(Parser):
+
     tokens = (
         'NAME', 'TIME', 'NUMBER',
     )
@@ -75,11 +80,12 @@ class WordTemplater(Parser):
         '''statement : NAME "=" expression
                        | NAME "=" TIME'''
         self.names[p[1]] = p[3]
+        p[0] = p[3]
 
 
     def p_statement_expr(self, p):
         'statement : expression'
-        print(p[1])
+        p[0] = p[1]
 
     def p_expression_binop(self, p):
         '''expression : expression '+' expression

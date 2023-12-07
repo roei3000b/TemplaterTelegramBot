@@ -2,24 +2,16 @@ import json
 import shutil
 import tempfile
 import zipfile
-from datetime import datetime, timedelta
 
 import requests
 import re
 from lxml import etree
+from . import lex
 
 from . import exceptions
 
-replacements = {
-}
-
 TOKENIZED_PATTERN = re.compile(r"\w*{{(.*)}}\w*")
-
-
-def add_minutes_to_time(time_str, minutes):
-    datetime_obj = datetime.strptime(time_str, '%H:%M')
-    new_datetime_obj = datetime_obj + timedelta(minutes=minutes)
-    return new_datetime_obj.time().strftime('%H:%M')
+WORD_TEMPLATER_PARSER = lex.WordTemplaterParser()
 
 
 def get_times(city):
@@ -36,7 +28,6 @@ def get_times(city):
 
 
 def init_replacements(city):
-    global replacements
     json_times = get_times(city)
     # TODO: check next holiday
     next_shabbat = json_times["nextShabbat"]
@@ -49,81 +40,19 @@ def init_replacements(city):
         "rabino_tam": parsed_times['צאת שבת ר"ת'],
         "sunset": next_shabbat["skiah"],
     }
+    return replacements
 
 
 def get_token(word):
     result = re.search(TOKENIZED_PATTERN, word)
     return result
 
-
-def get_replacement(token):
-    global replacements
-    return replacements.get(token, token)
-
-
 def parse_token(token):
-    global replacements
-    token = token.replace(" ", "")
-    # assuming we got token in the form of {{.*}} so we remove the {{ and }}
-    token = token[2:-2]
-
-    splited_token = token.split("=")
-    if len(splited_token) > 2:
-        raise Exception("Wrong token")
-
-    if len(splited_token) == 2:
-        replacements[splited_token[0]] = calculate_token(splited_token[1])
-        return replacements[splited_token[0]]
-
-    return calculate_token(splited_token[0])
-
-
-
-def calculate_token(token):
-    if get_replacement(token) != token:
-        return get_replacement(token)
-    calculated_token = "0"
-    current_word = ""
-    next_action = "+"
-    for c in token:
-        if c == "+" or c == "-":
-            if calculated_token.isnumeric() and current_word.isnumeric():
-                calculated_token = str(int(calculated_token) + int(next_action+current_word))
-            else:
-                calculated_token = call_correct_function(calculated_token, current_word, next_action)
-
-            next_action = c
-            current_word = ""
-        else:
-            current_word += c
-    calculated_token = call_correct_function(calculated_token, current_word, next_action)
-    return calculated_token
-
-
-def call_correct_function(calculated_token, current_word, next_action):
-    if not calculated_token.isnumeric():
-        calculated_token = get_replacement(calculated_token)
-        calculated_token = add_minutes_to_time(get_replacement(calculated_token),
-                                               int(next_action + current_word))
-    elif not current_word.isnumeric():
-        current_word = get_replacement(current_word)
-        calculated_token = add_minutes_to_time(current_word,
-                                               int(next_action + calculated_token))
-    return calculated_token
-
-
-def replace_if_needed(inner_content):
-    token = get_token(inner_content.text)
-    if token:
-        inner_content.text = get_replacement(token)
-
-
-def remove_element_from_xml(element):
-    element.getparent().remove(element)
+    return WORD_TEMPLATER_PARSER.parse(token[2:-2])
 
 
 def fill_template(template_file_name, target_directory, city):
-    init_replacements(city)
+    WORD_TEMPLATER_PARSER.set_names(init_replacements(city))
     with tempfile.TemporaryDirectory() as dir_name:
         shutil.copy(template_file_name, f"{dir_name}/input.zip")
         # shutil.copy(f"{dir_name}/input.zip", f"{target_directory}/output.docx", )
@@ -177,6 +106,6 @@ def fill_template(template_file_name, target_directory, city):
                     cross_line_token.append(text_element)
             tree.write(template_file_name)
             shutil.make_archive(f"{target_directory}/output", 'zip', extracted_path)
-            file_name = f"לוז שבת פרשת {replacements['parasha']}"
+            file_name = f"לוז שבת פרשת {WORD_TEMPLATER_PARSER.names['parasha']}"
             shutil.move(f"{target_directory}/output.zip", f"{target_directory}/{file_name}.docx")
             return f"{target_directory}/{file_name}.docx"
