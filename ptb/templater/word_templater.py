@@ -6,9 +6,8 @@ import zipfile
 import requests
 import re
 from lxml import etree
-import lex
 
-from . import exceptions
+from . import exceptions, lex
 
 TOKENIZED_PATTERN = re.compile(r"\w*{{(.*)}}\w*")
 WORD_TEMPLATER_PARSER = lex.WordTemplaterParser()

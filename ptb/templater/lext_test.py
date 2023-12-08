@@ -1,4 +1,4 @@
-import lex
+from ptb.templater import lex
 
 word_templater_parser = lex.WordTemplaterParser()
 while True:

@@ -1,7 +1,7 @@
 import os
 import ply.lex as lex
 import ply.yacc as yacc
-from ptb.templater import utils
+from . import utils
 
 class Parser:
     tokens = ()
