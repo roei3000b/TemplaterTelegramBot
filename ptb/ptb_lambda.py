@@ -2,7 +2,7 @@ import json
 import asyncio
 from pathlib import Path
 
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
 import os
 import templater.word_templater
@@ -13,7 +13,14 @@ application = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm roei!")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="ברוך הבא לטמפלייטר!"
+                                                                          "\r\n"
+                                                                        "שלח לי בבקשה קובץ וורד בפורמט docx"
+                                                                        " ואני אמלא אותו עבורך :)"
+                                                                        "\r\n"
+                                                                        "מוזמן לעיין בהוראות השימוש")
+
+    await update.message.reply_document(document=open("הוראות שימוש בטמפלייטר.docx", "rb"))
 
 
 async def docx(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -51,7 +58,7 @@ def lambda_handler(event, context):
 async def main(event, context):
     start_handler = CommandHandler('start', start)
     application.add_handler(start_handler)
-
+    application.bot.set_my_commands([BotCommand("start","התחל")])
     conv_handler = ConversationHandler(
         entry_points=[MessageHandler(filters.Document.DOCX, docx)],
         states={
