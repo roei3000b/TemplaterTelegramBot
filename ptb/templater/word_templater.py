@@ -54,8 +54,6 @@ def fill_template(template_file_name, target_directory, city):
     WORD_TEMPLATER_PARSER.set_names(init_replacements(city))
     with tempfile.TemporaryDirectory() as dir_name:
         shutil.copy(template_file_name, f"{dir_name}/input.zip")
-        # shutil.copy(f"{dir_name}/input.zip", f"{target_directory}/output.docx", )
-
         with zipfile.ZipFile(f"{dir_name}/input.zip", 'r') as zip_ref:
             extracted_path = dir_name + "/extracted"
             zip_ref.extractall(extracted_path)
@@ -71,7 +69,7 @@ def fill_template(template_file_name, target_directory, city):
             for text_element in text_elements:
                 index = 0
                 replaced_text = ""
-                while index < len(text_element.text):
+                while text_element.text and index < len(text_element.text):
                     if text_element.text[index:index+2] == '{{':
                         start_index = index
                         maybe_token = True
