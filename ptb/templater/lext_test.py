@@ -1,6 +1,6 @@
 from ptb.templater import lex
 
-word_templater_parser = lex.WordTemplaterParser()
+word_templater_parser = lex.TemplaterParser()
 while True:
     try:
         s = input('calc > ')
