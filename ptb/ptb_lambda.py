@@ -5,7 +5,7 @@ from pathlib import Path
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
 import os
-import templater.word_templater
+import templater.templater
 import templater.exceptions
 
 LOCATION, SENDING_TEMPLATE = range(2)
@@ -28,9 +28,9 @@ async def docx(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         city = update.message.text
-        filled_path = templater.word_templater.fill_template(context.user_data["template_path"],
+        filled_path = templater.word_templater.fill_word_template(context.user_data["template_path"],
                                                              "/tmp",
-                                                             city)
+                                                                  city)
         # TODO: figure out how to convert word to pdf for sending by bot
         await update.message.reply_document(document=open(filled_path, "rb"))
         context.user_data.clear()

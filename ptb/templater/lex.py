@@ -32,10 +32,10 @@ class Parser:
         self.names = names
 
 
-class WordTemplaterParser(Parser):
+class TemplaterParser(Parser):
 
     tokens = (
-        'NAME', 'TIME', 'NUMBER', 'UP', 'DOWN',
+        'NAME', 'TIME', 'NUMBER', 'UP', 'DOWN', "HEBREW_UP", "HEBREW_DOWN"
     )
 
     literals = ['=', '+', '-', '*', '/', '(', ')']
@@ -49,8 +49,16 @@ class WordTemplaterParser(Parser):
         r'DOWN'
         return t
 
+    def t_HEBREW_UP(self, t):
+        r'למעלה'
+        return t
+
+    def t_HEBREW_DOWN(self, t):
+        r'למטה'
+        return t
+
     def t_NAME(self, t):
-        r'[a-zA-Z_][a-zA-Z0-9_]*'
+        r'[a-zA-Z_א-ת][א-תa-zA-Z0-9_]*'
         return t
 
     def t_TIME(self, t):
@@ -123,13 +131,16 @@ class WordTemplaterParser(Parser):
         p[0] = -p[2]
 
     def p_expression_down(self, p):
-        "expression : DOWN '(' expression ')'"
+        """expression : DOWN '(' expression ')'
+                        | HEBREW_DOWN '(' expression ')'"""
         p[0] = utils.round_down_to_nearest_5_minutes(p[3])
 
 
     def p_expression_up(self, p):
-        "expression : UP '(' expression ')'"
+        """expression : UP '(' expression ')'
+                      | HEBREW_UP '(' expression ')'"""
         p[0] = utils.round_up_to_nearest_5_minutes(p[3])
+
 
     def p_expression_group(self, p):
         "expression : '(' expression ')'"
