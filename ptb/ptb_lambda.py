@@ -23,10 +23,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_document(document=open("הוראות שימוש בטמפלייטר.docx", "rb"))
 
 
-async def docx(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def template_fill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uploaded_file = await update.message.document.get_file()
     template_path = await uploaded_file.download_to_drive(custom_path=Path("/tmp") / Path(uploaded_file.file_path).name)
     context.user_data["template_path"] = template_path
+    if not template_path.name.endswith(".docx") and not template_path.name.endswith(".pptx"):
+        await update.message.reply_text("קובץ לא נתמך, שלח קובץ Word(docx) או PowerPoint(pptx) ")
+        return ConversationHandler.END
     await update.message.reply_text("מעולה :) שלח בבקשה את שם העיר עבורה תרצה את הלו״ז.\r\n"
                                     "שים לב שהזמנים נלקחים מאתר ישיבה!")
     return LOCATION
@@ -35,9 +38,18 @@ async def docx(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         city = update.message.text
-        filled_path = templater.word_templater.fill_word_template(context.user_data["template_path"],
-                                                             "/tmp",
-                                                                  city)
+        filename = context.user_data["template_path"].name
+        if filename.endswith(".docx"):
+            filled_path = templater.templater.fill_word_template(context.user_data["template_path"],
+                                                                 "/tmp",
+                                                                      city)
+        elif filename.endswith(".pptx"):
+            filled_path = templater.templater.fill_ppt_template(context.user_data["template_path"],
+                                                                      "/tmp",
+                                                                      city)
+        else:
+            await update.message.reply_text("קובץ לא נתמך")
+            return LOCATION
         # TODO: figure out how to convert word to pdf for sending by bot
         await update.message.reply_document(document=open(filled_path, "rb"))
         context.user_data.clear()
@@ -60,7 +72,7 @@ async def main(event, context):
     application.add_handler(start_handler)
     application.bot.set_my_commands([BotCommand("start","התחל")])
     conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Document.DOCX, docx)],
+        entry_points=[MessageHandler(filters.Document.ALL, template_fill)],
         states={
             LOCATION: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, location),
@@ -70,8 +82,8 @@ async def main(event, context):
     )
 
     application.add_handler(conv_handler)
-    docx_handler = MessageHandler(filters.Document.DOCX | filters.Document.DOC, docx)
-    application.add_handler(docx_handler)
+    template_handler = MessageHandler(filters.Document.ALL, template_fill)
+    application.add_handler(template_handler)
 
     try:
         await application.initialize()
