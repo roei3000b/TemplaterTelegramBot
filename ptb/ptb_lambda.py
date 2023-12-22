@@ -15,7 +15,7 @@ application = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="ברוך הבא לטמפלייטר!"
                                                                           "\r\n"
-                                                                        "שלח לי בבקשה קובץ וורד בפורמט docx"
+                                                                        "שלח לי בבקשה קובץ Word או PowerPoint"
                                                                         " ואני אמלא אותו עבורך :)"
                                                                         "\r\n"
                                                                         "מוזמן לעיין בהוראות השימוש")
@@ -38,17 +38,13 @@ async def template_fill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         city = update.message.text
-        filename = context.user_data["template_path"].name
-        if filename.endswith(".docx"):
-            filled_path = templater.templater.fill_word_template(context.user_data["template_path"],
+        try:
+            filled_path = templater.templater.fill_template(city,
+                                                            context.user_data["template_path"],
                                                                  "/tmp",
-                                                                      city)
-        elif filename.endswith(".pptx"):
-            filled_path = templater.templater.fill_ppt_template(context.user_data["template_path"],
-                                                                      "/tmp",
-                                                                      city)
-        else:
-            await update.message.reply_text("קובץ לא נתמך")
+                                                                                )
+        except templater.templater.UnsupportedFileType as e:
+            await update.message.reply_text("קובץ לא נתמך: " + str(e))
             return LOCATION
         # TODO: figure out how to convert word to pdf for sending by bot
         await update.message.reply_document(document=open(filled_path, "rb"))

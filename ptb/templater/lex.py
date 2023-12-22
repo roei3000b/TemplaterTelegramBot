@@ -29,7 +29,7 @@ class Parser:
         return b
 
     def set_names(self, names):
-        self.names = names
+        self.names.update(names)
 
 
 class TemplaterParser(Parser):
