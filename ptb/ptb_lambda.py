@@ -21,6 +21,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                                                         "מוזמן לעיין בהוראות השימוש")
 
     await update.message.reply_document(document=open("הוראות שימוש בטמפלייטר.docx", "rb"))
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text="https://youtu.be/kro65ztPqKQ?si=2Y-VfLmjpxT0wlY0")
 
 
 async def template_fill(update: Update, context: ContextTypes.DEFAULT_TYPE):
