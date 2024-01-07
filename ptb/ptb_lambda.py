@@ -2,13 +2,14 @@ import json
 import asyncio
 from pathlib import Path
 
-from telegram import Update, BotCommand
+from telegram import Update, BotCommand, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
 import os
 import templater.templater
 import templater.exceptions
+import template_manager
 
-LOCATION, SENDING_TEMPLATE = range(2)
+LOCATION, SENDING_TEMPLATE, DONE, CHOOSING = range(4)
 application = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
 
 
@@ -40,6 +41,7 @@ async def template_fill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         city = update.message.text
+        context.user_data["city"] = city
         try:
             filled_path = templater.templater.fill_template(city,
                                                             context.user_data["template_path"],
@@ -48,13 +50,24 @@ async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except templater.templater.UnsupportedFileType as e:
             await update.message.reply_text("קובץ לא נתמך: " + str(e))
             return LOCATION
-        # TODO: figure out how to convert word to pdf for sending by bot
         await update.message.reply_document(document=open(filled_path, "rb"))
-        context.user_data.clear()
-        return ConversationHandler.END
+        keyboard = [['כן', 'לא']]
+        reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+        await update.message.reply_text("האם תרצה לקבל את הלו״ז בכל יום שישי באופן אוטומטי?",
+                                        reply_markup=reply_markup)
+        return CHOOSING
     except templater.exceptions.NoSuchCity:
         await update.message.reply_text("עיר לא קיימת במאגר! בחר עיר אחרת")
         return LOCATION
+
+async def choosing(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_choice = update.message.text.lower()
+    if user_choice == "לא":
+        return DONE
+    manager = template_manager.TemplateManager()
+    manager.save(context.user_data["template_path"], context.user_data["city"], update.effective_chat.id)
+    return DONE
+
 
 async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
@@ -68,13 +81,20 @@ def lambda_handler(event, context):
 async def main(event, context):
     start_handler = CommandHandler('start', start)
     application.add_handler(start_handler)
-    application.bot.set_my_commands([BotCommand("start","התחל")])
+    await application.bot.set_my_commands([BotCommand("start","התחל")])
     conv_handler = ConversationHandler(
         entry_points=[MessageHandler(filters.Document.ALL, template_fill)],
         states={
             LOCATION: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, location),
             ],
+            DONE: [
+                MessageHandler(filters.Regex("^Done$"), done)
+            ],
+            CHOOSING: [
+                MessageHandler(filters.Regex("^כן$"), choosing),
+                MessageHandler(filters.Regex("^לא$"), done)
+            ]
         },
         fallbacks=[MessageHandler(filters.Regex("^Done$"), done)],
     )
