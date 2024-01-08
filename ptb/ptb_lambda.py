@@ -3,11 +3,13 @@ import asyncio
 from pathlib import Path
 
 from telegram import Update, BotCommand, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler, \
+    CallbackQueryHandler
 import os
 import templater.templater
 import templater.exceptions
 import template_manager
+import schedule_send_templates
 
 LOCATION, SENDING_TEMPLATE, DONE, CHOOSING = range(4)
 application = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
@@ -73,9 +75,19 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
     return ConversationHandler.END
 
+async def button(update, context):
+    query = update.callback_query
+    template_path = query.data
+    schedule_send_templates.MANAGER.delete(template_path)
+    await query.answer(text="בוצע, מוזמן להעלות טמפלייט חדש.")
+
 
 def lambda_handler(event, context):
-    return asyncio.get_event_loop().run_until_complete(main(event, context))
+    print(f"event: {event}")
+    if 'source' in event and event['source'] == 'aws.events':
+        return asyncio.get_event_loop().run_until_complete(schedule_send_templates.send_all_templates())
+    else:
+        return asyncio.get_event_loop().run_until_complete(main(event, context))
 
 
 async def main(event, context):
@@ -100,6 +112,7 @@ async def main(event, context):
     )
 
     application.add_handler(conv_handler)
+    application.add_handler(CallbackQueryHandler(button))
     template_handler = MessageHandler(filters.Document.ALL, template_fill)
     application.add_handler(template_handler)
 
