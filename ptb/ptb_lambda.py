@@ -43,6 +43,7 @@ async def template_fill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         city = update.message.text
+        print(f"Trying to get data from city: {city}")
         context.user_data["city"] = city
         try:
             filled_path = templater.templater.fill_template(city,
@@ -66,6 +67,7 @@ async def choosing(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_choice = update.message.text.lower()
     if user_choice == "לא":
         return DONE
+    print("Saving template...")
     manager = template_manager.TemplateManager()
     manager.save(context.user_data["template_path"], context.user_data["city"], update.effective_chat.id)
     return DONE
@@ -73,6 +75,7 @@ async def choosing(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
+    print(f'{"*"*10} Done {"*"*10}')
     return ConversationHandler.END
 
 async def button(update, context):
@@ -101,7 +104,7 @@ async def main(event, context):
                 MessageHandler(filters.TEXT & ~filters.COMMAND, location),
             ],
             DONE: [
-                MessageHandler(filters.Regex("^Done$"), done)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, done)
             ],
             CHOOSING: [
                 MessageHandler(filters.Regex("^כן$"), choosing),
