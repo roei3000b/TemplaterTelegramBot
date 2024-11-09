@@ -161,24 +161,33 @@ class PowerPointTemplater(OfficeTemplater):
     def file_extension(self):
         return "pptx"
 
+def resolve_cities_id_dictionary(file_name):
+    pattern = r'<option value="(\d+)">([^<]+)</option>'
+
+    with open(file_name, encoding='utf-8') as f:
+        cities_dict = {name: int(city_id) for city_id, name in re.findall(pattern, f.read())}
+
+    return cities_dict
 
 def get_times(city):
-    response = requests.get(f"https://www.yeshiva.org.il/calendar/shabatot?place={city}")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    places_file = os.path.join(script_dir, "places.txt")
+    cities_dict = resolve_cities_id_dictionary(places_file)
+    if city not in cities_dict:
+        raise Exception("City not found")
+    response = requests.get(f"https://www.yeshiva.org.il/api/times/AllDailyTimes?cacheVer=51&place={cities_dict[city]}", headers={"Referer": "https://www.yeshiva.org.il/"})
     if response.status_code != 200:
         raise Exception("Failed to get next times")
-    times = re.search(r"defaultData = JSON\.parse\(\'(.*?)\'\);", response.text).groups()[0]
-    times = times.replace("\\\\", "\\")
-    times = times.replace("'", "\"")
-    json_times = json.loads(times)
-    if json_times["place"]["name"] != city:
-        raise exceptions.NoSuchCity("Wrong city")
+    json_times = response.json()
+    if json_times["standardTimes"]["place"]["name"] != city:
+        raise Exception("Wrong city")
     return json_times
 
 
 def init_replacements(city):
     json_times = get_times(city)
     # TODO: check next holiday
-    next_shabbat = json_times["nextShabbat"]
+    next_shabbat = json_times["standardTimes"]["shabat"]
     parsed_times = {k["name"]: k["value"] for k in next_shabbat["times"]}
 
     replacements = {
@@ -196,6 +205,9 @@ def init_replacements(city):
         "רבינו_תם": parsed_times['צאת שבת ר"ת'],
         "שקיעה": next_shabbat["skiah"],
     }
+    additional_times = json_times["standardTimes"]["times"]
+    parsed_times = {k["name"].replace(" ", "_").replace('"', ""): k["value"] for k in additional_times}
+    replacements.update(parsed_times)
     return replacements
 
 

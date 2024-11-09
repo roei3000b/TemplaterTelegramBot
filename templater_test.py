@@ -4,6 +4,6 @@ import ptb.templater.templater
 # city = "חריש"
 # print(ptb.templater.templater.fill_template(city, test_file, ".", ))
 
-test_file = "p2.pptx"
-city = "אילת"
+test_file = "ptb/הוראות שימוש בטמפלייטר.docx"
+city = "חריש"
 print(ptb.templater.templater.fill_template(city, test_file, ".", ))
