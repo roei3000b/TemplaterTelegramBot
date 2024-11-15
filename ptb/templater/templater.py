@@ -206,7 +206,7 @@ def init_replacements(city):
         "שקיעה": next_shabbat["skiah"],
     }
     additional_times = json_times["standardTimes"]["times"]
-    parsed_times = {k["name"].replace(" ", "_").replace('"', ""): k["value"] for k in additional_times}
+    parsed_times = {k["name"].replace(" ", "_").replace('"', "").replace(")", "_").replace("(","_"): k["value"] for k in additional_times}
     replacements.update(parsed_times)
     return replacements
 
