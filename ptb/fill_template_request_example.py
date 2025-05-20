@@ -3,14 +3,14 @@ import re
 import urllib.parse
 
 url = "http://localhost:5000/fill-template"
-files = {"file": open("example.docx", "rb")}
+files = {"file": open("templater/example.docx", "rb")}
 data = {"city": "חריש"}
 
 response = requests.post(url, files=files, data=data)
 
 if response.status_code == 200:
     content_disposition = response.headers.get("Content-Disposition", "")
-    filename = "output.docx"
+    filename = "templater/output.docx"
     # Try to extract UTF-8 filename (RFC 5987)
     match = re.search(r"filename\*=UTF-8''(.+)", content_disposition)
     if match:
