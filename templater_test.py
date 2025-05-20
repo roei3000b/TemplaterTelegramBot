@@ -4,6 +4,6 @@ import ptb.templater.templater
 # city = "חריש"
 # print(ptb.templater.templater.fill_template(city, test_file, ".", ))
 
-test_file = "ptb/הוראות שימוש בטמפלייטר.docx"
-city = "חריש"
+test_file = r"C:\Users\Roei Bitan\Downloads\Telegram Desktop\תפארת שלמה טמפלייט.docx"
+city = "ירושלים"
 print(ptb.templater.templater.fill_template(city, test_file, ".", ))

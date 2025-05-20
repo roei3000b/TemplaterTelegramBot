@@ -11,7 +11,7 @@ import os
 from lxml import etree
 from abc import ABC, abstractmethod
 
-from . import exceptions, lex
+import lex
 
 TOKENIZED_PATTERN = re.compile(r"\w*{{(.*)}}\w*")
 TEMPLATER_PARSER = lex.TemplaterParser()
