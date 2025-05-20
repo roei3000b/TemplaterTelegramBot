@@ -12,7 +12,7 @@ A Flask API to fill DOCX/PPTX templates with city-specific data.
    docker build -t templater-app .
 
 2. Run the server:  
-   docker run -p 5000:5000 templater-app
+   docker run -p 5000:5000 templater-app gunicorn -w 4 -b 0.0.0.0:5000 app:app
 
 The API will be available at http://localhost:5000
 
