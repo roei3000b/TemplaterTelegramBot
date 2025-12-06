@@ -5,11 +5,11 @@ import shutil
 import tempfile
 import zipfile
 
-import requests
 import re
 import os
 from lxml import etree
 from abc import ABC, abstractmethod
+from curl_cffi import requests
 
 from . import exceptions, lex
 
@@ -175,7 +175,18 @@ def get_times(city):
     cities_dict = resolve_cities_id_dictionary(places_file)
     if city not in cities_dict:
         raise Exception("City not found")
-    response = requests.get(f"https://www.yeshiva.org.il/api/times/AllDailyTimes?cacheVer=51&place={cities_dict[city]}", headers={"Referer": "https://www.yeshiva.org.il/"})
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "application/json",
+        "Accept-Language": "he,en;q=0.9",
+        "Referer": "https://www.yeshiva.org.il/"
+    }
+
+    response = requests.get(f"https://www.yeshiva.org.il/api/times/AllDailyTimes?cacheVer=9&place={cities_dict[city]}", headers=headers, impersonate="chrome120")
     if response.status_code != 200:
         raise Exception("Failed to get next times")
     json_times = response.json()
