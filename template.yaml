@@ -6,9 +6,9 @@ Description: >
 Globals:
   Function:
     Timeout: 3
-    Runtime: python3.11
+    Runtime: python3.13
     Architectures:
-      - arm64
+      - x86_64
 
 Resources:
   PTBFunction:

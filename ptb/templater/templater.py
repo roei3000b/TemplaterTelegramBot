@@ -12,6 +12,8 @@ from abc import ABC, abstractmethod
 from curl_cffi import requests
 
 from . import exceptions, lex
+from dotenv import load_dotenv
+load_dotenv()
 
 TOKENIZED_PATTERN = re.compile(r"\w*{{(.*)}}\w*")
 TEMPLATER_PARSER = lex.TemplaterParser()
@@ -176,19 +178,14 @@ def get_times(city):
     if city not in cities_dict:
         raise Exception("City not found")
     headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        ),
-        "Accept": "application/json",
-        "Accept-Language": "he,en;q=0.9",
+        "User-Agent": os.getenv("YESHIVA_BOT_UA"),
         "Referer": "https://www.yeshiva.org.il/"
     }
+    print(f"Headers: {headers}")
 
     response = requests.get(f"https://www.yeshiva.org.il/api/times/AllDailyTimes?cacheVer=9&place={cities_dict[city]}", headers=headers, impersonate="chrome120")
     if response.status_code != 200:
-        raise Exception("Failed to get next times")
+        raise Exception(f"Failed to get next times: {response.status_code} {response.text}")
     json_times = response.json()
     if json_times["standardTimes"]["place"]["name"] != city:
         raise Exception("Wrong city")
