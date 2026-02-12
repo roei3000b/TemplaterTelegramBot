@@ -1,8 +1,0 @@
-*.zip
-*.pyc
-packaged.yml
-tmp.py
-.aws-sam/
-.mypy_cache/
-.venv
-.cdk.out/
