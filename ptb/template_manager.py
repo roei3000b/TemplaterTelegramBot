@@ -54,7 +54,14 @@ class TemplateManager:
             'chat_id': chat_id
         }
         self.templates_table.put_item(Item=template_item)
+        return key
 
+    def update_email(self, template_path, email):
+        self.templates_table.update_item(
+            Key={'template_path': template_path},
+            UpdateExpression='SET email = :email',
+            ExpressionAttributeValues={':email': email}
+        )
 
     def list_templates(self):
         return self.templates_table.scan()["Items"]

@@ -5,7 +5,7 @@ Description: >
 
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 30
     Runtime: python3.13
     Architectures:
       - x86_64
@@ -16,6 +16,12 @@ Resources:
     Properties:
       CodeUri: ptb/
       Handler: ptb_lambda.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendRawEmail
+              Resource: '*'
       FunctionUrlConfig:
         AuthType: NONE
 

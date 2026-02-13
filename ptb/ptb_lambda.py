@@ -6,12 +6,13 @@ from telegram import Update, BotCommand, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler, \
     CallbackQueryHandler
 import os
+import re
 import templater.templater
 import templater.exceptions
 import template_manager
 import schedule_send_templates
 
-LOCATION, SENDING_TEMPLATE, DONE, CHOOSING = range(4)
+LOCATION, SENDING_TEMPLATE, DONE, CHOOSING, ASK_EMAIL, EMAIL_INPUT = range(6)
 application = ApplicationBuilder().token(os.getenv("TELEGRAM_TOKEN")).build()
 
 
@@ -69,7 +70,30 @@ async def choosing(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return DONE
     print("Saving template...")
     manager = template_manager.TemplateManager()
-    manager.save(context.user_data["template_path"], context.user_data["city"], update.effective_chat.id)
+    key = manager.save(context.user_data["template_path"], context.user_data["city"], update.effective_chat.id)
+    context.user_data["template_key"] = key
+    keyboard = [['כן', 'לא']]
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    await update.message.reply_text("האם תרצה לקבל את הלו״ז גם במייל?", reply_markup=reply_markup)
+    return ASK_EMAIL
+
+
+async def ask_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_choice = update.message.text
+    if user_choice == "לא":
+        return DONE
+    await update.message.reply_text("שלח בבקשה את כתובת המייל שלך:")
+    return EMAIL_INPUT
+
+
+async def email_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    email = update.message.text.strip()
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        await update.message.reply_text("כתובת מייל לא תקינה, נסה שוב:")
+        return EMAIL_INPUT
+    manager = template_manager.TemplateManager()
+    manager.update_email(context.user_data["template_key"], email)
+    await update.message.reply_text("המייל נשמר בהצלחה!")
     return DONE
 
 
@@ -109,6 +133,13 @@ async def main(event, context):
             CHOOSING: [
                 MessageHandler(filters.Regex("^כן$"), choosing),
                 MessageHandler(filters.Regex("^לא$"), done)
+            ],
+            ASK_EMAIL: [
+                MessageHandler(filters.Regex("^כן$"), ask_email),
+                MessageHandler(filters.Regex("^לא$"), done)
+            ],
+            EMAIL_INPUT: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, email_input)
             ]
         },
         fallbacks=[MessageHandler(filters.Regex("^Done$"), done)],
